@@ -1,0 +1,32 @@
+# Build output
+target/
+*.class
+
+# Local runtime state
+.run/
+*.log
+*.pid
+data/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Local secrets / overrides
+application-local.yml
+*.local.yml
+.env
+
+# 前端已拆分为独立仓库 company-platform-frontend；
+# 这里忽略仓库内可能残留的前端目录，避免重复入库。
+platform-web/
+node_modules/
+dist/

@@ -1,0 +1,22 @@
+# 统一按文本处理，仓库内保存 LF，检出时再按平台转换。
+* text=auto
+
+# Windows 批处理与 PowerShell 脚本按 CRLF 检出
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Shell 脚本必须保持 LF，否则在 Linux 上无法执行
+*.sh text eol=lf
+
+# 二进制文件不做换行转换
+*.p12 binary
+*.jks binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.zip binary

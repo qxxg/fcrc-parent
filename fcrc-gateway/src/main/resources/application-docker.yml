@@ -1,0 +1,43 @@
+# Docker / 测试服务器：注册到 Nacos，路由使用 lb:// 做服务发现 + 负载均衡。
+spring:
+  cloud:
+    nacos:
+      discovery:
+        enabled: true
+        register-enabled: true
+        server-addr: ${NACOS_SERVER:fcrc-nacos:8848}
+        namespace: ${NACOS_NAMESPACE:public}
+        group: ${NACOS_GROUP:DEFAULT_GROUP}
+    gateway:
+      server:
+        webflux:
+          routes:
+            - id: fcrc-customer
+              uri: lb://fcrc-customer
+              predicates:
+                # 内部接口 /internal/** 不经过网关，只允许内网服务直连，避免公网越权访问。
+                - Path=/api/customers/**,/api/customers
+            - id: fcrc-risk
+              uri: lb://fcrc-risk
+              predicates:
+                - Path=/api/risk/**
+            - id: fcrc-compliance
+              uri: lb://fcrc-compliance
+              predicates:
+                - Path=/api/compliance/**
+            - id: fcrc-workflow
+              uri: lb://fcrc-workflow
+              predicates:
+                - Path=/api/workflows/**
+            - id: fcrc-agent
+              uri: lb://fcrc-agent
+              predicates:
+                - Path=/api/agent/**
+            - id: fcrc-case
+              uri: lb://fcrc-case
+              predicates:
+                - Path=/api/cases/**
+            - id: fcrc-report
+              uri: lb://fcrc-report
+              predicates:
+                - Path=/api/reports/**

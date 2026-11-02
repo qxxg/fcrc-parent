@@ -1,0 +1,19 @@
+# Docker / 测试服务器：注册到 Nacos，下游走 Compose 服务 DNS。
+spring:
+  cloud:
+    nacos:
+      discovery:
+        enabled: true
+        register-enabled: true
+        server-addr: ${NACOS_SERVER:fcrc-nacos:8848}
+        namespace: ${NACOS_NAMESPACE:public}
+        group: ${NACOS_GROUP:DEFAULT_GROUP}
+
+fcrc:
+  clients:
+    customer: ${FCRC_CUSTOMER_URL:http://fcrc-customer:8081}
+    risk: ${FCRC_RISK_URL:http://fcrc-risk:8082}
+    compliance: ${FCRC_COMPLIANCE_URL:http://fcrc-compliance:8083}
+    workflow: ${FCRC_WORKFLOW_URL:http://fcrc-workflow:8084}
+    cases: ${FCRC_CASE_URL:http://fcrc-case:8086}
+    report: ${FCRC_REPORT_URL:http://fcrc-report:8087}

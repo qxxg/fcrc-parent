@@ -1,0 +1,65 @@
+server:
+  port: ${SERVER_PORT:8085}
+  shutdown: graceful
+
+spring:
+  application:
+    name: fcrc-agent
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+  # Agent 服务不直接访问数据库，排除 JDBC/JPA 自动配置，避免启动时索要 DataSource。
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+      - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration
+  jackson:
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
+  mvc:
+    async:
+      request-timeout: 200000
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    com.fcrc: INFO
+    io.agentscope: INFO
+
+fcrc:
+  agent:
+    agent-id: fcrc-copilot
+    name: FCRC 合规风控 Copilot
+    workspace: ${FCRC_AGENT_WORKSPACE:./data/agent-workspace}
+    state-dir: ${FCRC_AGENT_STATE:./data/agent-state}
+    # mock：零依赖演示；dashscope：真实 qwen，需要 DASHSCOPE_API_KEY
+    model: ${FCRC_AGENT_MODEL:mock}
+    dashscope-api-key: ${DASHSCOPE_API_KEY:}
+    dashscope-model: ${FCRC_DASHSCOPE_MODEL:qwen-plus}
+    max-iters: 8
+    memory-enabled: true
+    compaction-enabled: true
+    compaction-trigger-messages: 40
+    plan-mode-enabled: true
+    skills-enabled: true
+    sandbox-enabled: ${FCRC_AGENT_SANDBOX:false}
+    sandbox-image: ${FCRC_AGENT_SANDBOX_IMAGE:eclipse-temurin:21-jdk}
+    request-timeout: 180s
+  clients:
+    customer: ${FCRC_CUSTOMER_URL:http://localhost:8081}
+    risk: ${FCRC_RISK_URL:http://localhost:8082}
+    compliance: ${FCRC_COMPLIANCE_URL:http://localhost:8083}
+    workflow: ${FCRC_WORKFLOW_URL:http://localhost:8084}
+    cases: ${FCRC_CASE_URL:http://localhost:8086}
+    report: ${FCRC_REPORT_URL:http://localhost:8087}
+    connect-timeout-ms: 3000
+    read-timeout-ms: 20000

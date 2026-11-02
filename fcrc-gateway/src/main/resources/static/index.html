@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FCRC 合规风控驾驶舱</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<div class="app">
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="brand-mark">FC</div>
+            <div class="brand-text">
+                <strong>FCRC</strong>
+                <span>Compliance OS</span>
+            </div>
+        </div>
+
+        <nav class="nav" id="nav">
+            <button class="nav-item active" data-view="overview">
+                <span class="nav-icon">◈</span>合规驾驶舱
+            </button>
+            <button class="nav-item" data-view="customers">
+                <span class="nav-icon">◉</span>客户与 KYC
+            </button>
+            <button class="nav-item" data-view="workflows">
+                <span class="nav-icon">⇄</span>开户工作流
+            </button>
+            <button class="nav-item" data-view="cases">
+                <span class="nav-icon">⚑</span>合规案件
+            </button>
+            <button class="nav-item" data-view="reports">
+                <span class="nav-icon">▤</span>监管报告
+            </button>
+            <button class="nav-item" data-view="copilot">
+                <span class="nav-icon">✦</span>AI Copilot
+            </button>
+        </nav>
+
+        <div class="sidebar-foot">
+            <div class="model-badge" id="modelBadge">模型加载中…</div>
+            <div class="guardrail">AI 不参与人工审批</div>
+        </div>
+    </aside>
+
+    <main class="main">
+        <header class="topbar">
+            <div>
+                <h1 id="viewTitle">合规驾驶舱</h1>
+                <p class="subtitle" id="viewSubtitle">实时掌握客户、风险、合规与工作流状态</p>
+            </div>
+            <div class="top-actions">
+                <span class="health" id="health"><i></i>服务检测中</span>
+                <button class="btn ghost" id="refreshBtn">刷新</button>
+            </div>
+        </header>
+
+        <!-- 驾驶舱 -->
+        <section class="view active" id="view-overview">
+            <div class="cards" id="statCards">
+                <article class="card"><span class="card-label">客户总数</span><strong id="statCustomers">–</strong><small id="statPep">PEP –</small></article>
+                <article class="card"><span class="card-label">待人工复核</span><strong id="statReview">–</strong><small>工作流暂停</small></article>
+                <article class="card"><span class="card-label">进行中案件</span><strong id="statCases">–</strong><small id="statOverdue">逾期 –</small></article>
+                <article class="card"><span class="card-label">监管报告</span><strong id="statReports">–</strong><small id="statSubmitted">已报送 –</small></article>
+            </div>
+
+            <div class="grid-2">
+                <article class="panel">
+                    <div class="panel-head">
+                        <h2>最近工作流</h2>
+                        <button class="link" data-jump="workflows">查看全部 →</button>
+                    </div>
+                    <div class="table-wrap">
+                        <table>
+                            <thead><tr><th>运行号</th><th>客户</th><th>风险</th><th>合规</th><th>状态</th></tr></thead>
+                            <tbody id="recentWorkflows"><tr><td colspan="5" class="empty">加载中…</td></tr></tbody>
+                        </table>
+                    </div>
+                </article>
+
+                <article class="panel agent-panel">
+                    <div class="panel-head"><h2>AI 助手状态</h2><span class="pill" id="agentMode">–</span></div>
+                    <ul class="key-values" id="agentCapabilities">
+                        <li><span>模型</span><b id="capModel">–</b></li>
+                        <li><span>工具数</span><b id="capTools">–</b></li>
+                        <li><span>Plan Mode</span><b id="capPlan">–</b></li>
+                        <li><span>长期记忆</span><b id="capMemory">–</b></li>
+                        <li><span>沙箱</span><b id="capSandbox">–</b></li>
+                    </ul>
+                    <p class="agent-note" id="capHitl">–</p>
+                    <button class="btn primary wide" data-jump="copilot">打开 Copilot</button>
+                </article>
+            </div>
+        </section>
+
+        <!-- 客户 -->
+        <section class="view" id="view-customers">
+            <div class="toolbar">
+                <input id="customerKeyword" placeholder="搜索客户号 / 姓名" />
+                <select id="customerStatus">
+                    <option value="">全部状态</option>
+                    <option value="NOT_STARTED">未开始</option>
+                    <option value="RUNNING">进行中</option>
+                    <option value="MANUAL_REVIEW">人工复核</option>
+                    <option value="COMPLETED">已完成</option>
+                    <option value="REJECTED">已拒绝</option>
+                </select>
+                <button class="btn primary" id="searchCustomers">查询</button>
+            </div>
+            <div class="table-wrap panel">
+                <table>
+                    <thead><tr><th>客户号</th><th>姓名</th><th>类型</th><th>国家</th><th>PEP</th><th>KYC</th><th>开户状态</th><th>风险等级</th></tr></thead>
+                    <tbody id="customerRows"><tr><td colspan="8" class="empty">加载中…</td></tr></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- 工作流 -->
+        <section class="view" id="view-workflows">
+            <div class="toolbar">
+                <select id="workflowStatus">
+                    <option value="">全部状态</option>
+                    <option value="MANUAL_REVIEW">人工复核</option>
+                    <option value="COMPLETED">已完成</option>
+                    <option value="REJECTED">已拒绝</option>
+                    <option value="RUNNING">进行中</option>
+                    <option value="FAILED">失败</option>
+                </select>
+                <button class="btn primary" id="searchWorkflows">查询</button>
+                <span class="hint">工作流由 Spring AI Alibaba Graph 编排；MANUAL_REVIEW 需真人复核。</span>
+            </div>
+            <div class="table-wrap panel">
+                <table>
+                    <thead><tr><th>运行号</th><th>客户</th><th>风险分</th><th>合规</th><th>初判</th><th>状态</th><th>操作</th></tr></thead>
+                    <tbody id="workflowRows"><tr><td colspan="7" class="empty">加载中…</td></tr></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- 案件 -->
+        <section class="view" id="view-cases">
+            <div class="toolbar">
+                <select id="caseStatus">
+                    <option value="">全部状态</option>
+                    <option value="OPEN">待处理</option>
+                    <option value="IN_PROGRESS">处理中</option>
+                    <option value="PENDING_INFO">待补充</option>
+                    <option value="RESOLVED">已解决</option>
+                    <option value="CLOSED">已关闭</option>
+                </select>
+                <button class="btn primary" id="searchCases">查询</button>
+            </div>
+            <div class="table-wrap panel">
+                <table>
+                    <thead><tr><th>案件号</th><th>客户</th><th>类型</th><th>优先级</th><th>状态</th><th>负责人</th><th>截止</th></tr></thead>
+                    <tbody id="caseRows"><tr><td colspan="7" class="empty">加载中…</td></tr></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- 报告 -->
+        <section class="view" id="view-reports">
+            <div class="toolbar">
+                <select id="reportStatus">
+                    <option value="">全部状态</option>
+                    <option value="DRAFT">草稿</option>
+                    <option value="FINAL">已定稿</option>
+                    <option value="SUBMITTED">已报送</option>
+                </select>
+                <button class="btn primary" id="searchReports">查询</button>
+            </div>
+            <div class="table-wrap panel">
+                <table>
+                    <thead><tr><th>报告号</th><th>客户</th><th>类型</th><th>期间</th><th>结论</th><th>状态</th><th>操作</th></tr></thead>
+                    <tbody id="reportRows"><tr><td colspan="7" class="empty">加载中…</td></tr></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Copilot -->
+        <section class="view" id="view-copilot">
+            <div class="copilot">
+                <div class="chat-panel panel">
+                    <div class="chat-head">
+                        <div>
+                            <h2>FCRC Copilot</h2>
+                            <p id="chatHint">可以问客户、风险、合规、工作流、案件、报告与制度。</p>
+                        </div>
+                        <div class="chat-tools">
+                            <button class="btn ghost small" id="planToggle">Plan Mode</button>
+                            <button class="btn ghost small" id="clearChat">清空</button>
+                        </div>
+                    </div>
+                    <div class="messages" id="messages">
+                        <div class="msg assistant">
+                            <div class="avatar">AI</div>
+                            <div class="bubble">
+                                你好，我是 FCRC 合规风控 Copilot。试试：
+                                <ul>
+                                    <li>列出客户</li>
+                                    <li>评估客户 1 的风险</li>
+                                    <li>对客户 1 做合规筛查</li>
+                                    <li>给客户 1 开户</li>
+                                    <li>PEP 的尽职调查要求</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <form class="composer" id="chatForm">
+                        <input id="chatInput" placeholder="输入问题，Enter 发送…" autocomplete="off" />
+                        <button class="btn primary" type="submit" id="sendBtn">发送</button>
+                    </form>
+                    <div class="chat-foot">
+                        <span id="sessionLabel">session: main</span>
+                        <span class="guardrail-inline">AI 只提供建议，审批由真人完成</span>
+                    </div>
+                </div>
+
+                <aside class="side-panel panel">
+                    <h3>会话与权限</h3>
+                    <label class="field">
+                        <span>用户 ID</span>
+                        <input id="userId" value="demo-user" />
+                    </label>
+                    <label class="field">
+                        <span>会话 ID</span>
+                        <input id="sessionId" value="main" />
+                    </label>
+                    <label class="field">
+                        <span>权限模式</span>
+                        <select id="permissionMode">
+                            <option value="default">default</option>
+                            <option value="explore">explore</option>
+                            <option value="dont_ask">dont_ask</option>
+                        </select>
+                    </label>
+                    <button class="btn ghost wide" id="applyPermission">应用权限模式</button>
+                    <div class="side-divider"></div>
+                    <h3>本轮事件</h3>
+                    <div class="event-log" id="eventLog"><span class="muted">等待对话…</span></div>
+                    <div class="side-divider"></div>
+                    <h3>安全策略</h3>
+                    <p class="muted small-text">
+                        默认拒绝 + 白名单；shell、写文件、联网工具全部禁用；
+                        人工复核接口未注册为工具。
+                    </p>
+                </aside>
+            </div>
+        </section>
+    </main>
+</div>
+
+<!-- 人工复核弹窗 -->
+<div class="modal-backdrop" id="reviewModal">
+    <div class="modal">
+        <h3>人工复核</h3>
+        <p class="muted" id="reviewRunLabel">–</p>
+        <label class="field"><span>复核人</span><input id="reviewer" value="compliance.officer" /></label>
+        <label class="field"><span>复核意见</span><textarea id="reviewComment" rows="3" placeholder="请填写判断依据"></textarea></label>
+        <div class="modal-actions">
+            <button class="btn ghost" id="cancelReview">取消</button>
+            <button class="btn danger" id="rejectBtn">拒绝</button>
+            <button class="btn primary" id="approveBtn">通过</button>
+        </div>
+    </div>
+</div>
+
+<script src="/app.js"></script>
+</body>
+</html>

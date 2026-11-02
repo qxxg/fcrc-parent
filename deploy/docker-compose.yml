@@ -1,0 +1,300 @@
+# FCRC 合规风控平台 Docker Compose 编排。
+#
+# 拓扑：
+#   Internet/LAN -> fcrc-web (Nginx:8088) -> fcrc-gateway:8080
+#   fcrc-gateway -> Nacos 服务发现 -> 7 个微服务
+#   业务服务 -> fcrc-mysql:3306
+#
+# 启动：cd deploy && cp .env.example .env && docker compose up -d --build
+name: fcrc
+
+x-common-env: &common-env
+  TZ: Asia/Shanghai
+  SPRING_PROFILES_ACTIVE: docker
+  MYSQL_HOST: fcrc-mysql
+  MYSQL_PORT: "3306"
+  MYSQL_DATABASE: ${MYSQL_DATABASE:-fcrc}
+  MYSQL_USERNAME: ${MYSQL_USER:-fcrc}
+  MYSQL_PASSWORD: ${MYSQL_PASSWORD:-fcrc_pass}
+  NACOS_SERVER_ADDR: fcrc-nacos:8848
+  NACOS_SERVER: fcrc-nacos:8848
+  NACOS_NAMESPACE: ${NACOS_NAMESPACE:-public}
+  NACOS_GROUP: ${NACOS_GROUP:-DEFAULT_GROUP}
+  FCRC_DEMO_DATA_ENABLED: ${FCRC_DEMO_DATA_ENABLED:-true}
+  JAVA_OPTS: "-XX:MaxRAMPercentage=70 -XX:+UseG1GC -Dfile.encoding=UTF-8"
+
+x-service-base: &service-base
+  restart: unless-stopped
+  stop_grace_period: 30s
+  networks:
+    - fcrc-net
+  depends_on:
+    fcrc-mysql:
+      condition: service_healthy
+    fcrc-nacos:
+      condition: service_started
+
+services:
+  fcrc-mysql:
+    image: mysql:8.4
+    container_name: fcrc-mysql
+    restart: unless-stopped
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-time-zone=+08:00
+      - --max-connections=300
+    environment:
+      TZ: Asia/Shanghai
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-fcrc_root_pass}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-fcrc}
+      MYSQL_USER: ${MYSQL_USER:-fcrc}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-fcrc_pass}
+    ports:
+      - "127.0.0.1:${MYSQL_HOST_PORT:-3306}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 40s
+    networks:
+      - fcrc-net
+
+  fcrc-nacos:
+    image: nacos/nacos-server:${NACOS_VERSION:-v3.0.3}
+    container_name: fcrc-nacos
+    restart: unless-stopped
+    environment:
+      MODE: standalone
+      PREFER_HOST_MODE: hostname
+      TZ: Asia/Shanghai
+      JVM_XMS: 512m
+      JVM_XMX: 512m
+      JVM_XMN: 256m
+      NACOS_AUTH_ENABLE: "false"
+      NACOS_AUTH_IDENTITY_KEY: ${NACOS_AUTH_IDENTITY_KEY:-serverIdentity}
+      NACOS_AUTH_IDENTITY_VALUE: ${NACOS_AUTH_IDENTITY_VALUE:-security}
+      NACOS_AUTH_TOKEN: ${NACOS_AUTH_TOKEN:-SecretKey012345678901234567890123456789012345678901234567890123456789}
+    ports:
+      - "${NACOS_HTTP_PORT:-8848}:8848"
+      - "${NACOS_GRPC_PORT:-9848}:9848"
+      - "${NACOS_CONSOLE_PORT:-8849}:8080"
+    volumes:
+      - nacos_data:/home/nacos/data
+      - nacos_logs:/home/nacos/logs
+    networks:
+      - fcrc-net
+
+  fcrc-customer:
+    <<: *service-base
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      args:
+        MODULE: fcrc-customer
+    image: fcrc/fcrc-customer:${IMAGE_TAG:-1.0.0}
+    container_name: fcrc-customer
+    environment:
+      <<: *common-env
+      SERVER_PORT: "8081"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8081/actuator/health | grep -q '\"status\":\"UP\"'"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+
+  fcrc-risk:
+    <<: *service-base
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      args:
+        MODULE: fcrc-risk
+    image: fcrc/fcrc-risk:${IMAGE_TAG:-1.0.0}
+    container_name: fcrc-risk
+    environment:
+      <<: *common-env
+      SERVER_PORT: "8082"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8082/actuator/health | grep -q '\"status\":\"UP\"'"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+
+  fcrc-compliance:
+    <<: *service-base
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      args:
+        MODULE: fcrc-compliance
+    image: fcrc/fcrc-compliance:${IMAGE_TAG:-1.0.0}
+    container_name: fcrc-compliance
+    environment:
+      <<: *common-env
+      SERVER_PORT: "8083"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8083/actuator/health | grep -q '\"status\":\"UP\"'"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+
+  fcrc-case:
+    <<: *service-base
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      args:
+        MODULE: fcrc-case
+    image: fcrc/fcrc-case:${IMAGE_TAG:-1.0.0}
+    container_name: fcrc-case
+    environment:
+      <<: *common-env
+      SERVER_PORT: "8086"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8086/actuator/health | grep -q '\"status\":\"UP\"'"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+
+  fcrc-report:
+    <<: *service-base
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      args:
+        MODULE: fcrc-report
+    image: fcrc/fcrc-report:${IMAGE_TAG:-1.0.0}
+    container_name: fcrc-report
+    environment:
+      <<: *common-env
+      SERVER_PORT: "8087"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8087/actuator/health | grep -q '\"status\":\"UP\"'"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+
+  fcrc-workflow:
+    <<: *service-base
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      args:
+        MODULE: fcrc-workflow
+    image: fcrc/fcrc-workflow:${IMAGE_TAG:-1.0.0}
+    container_name: fcrc-workflow
+    environment:
+      <<: *common-env
+      SERVER_PORT: "8084"
+      CUSTOMER_URL: http://fcrc-customer:8081
+      RISK_URL: http://fcrc-risk:8082
+      COMPLIANCE_URL: http://fcrc-compliance:8083
+      CASE_URL: http://fcrc-case:8086
+      REPORT_URL: http://fcrc-report:8087
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8084/actuator/health | grep -q '\"status\":\"UP\"'"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 90s
+
+  fcrc-agent:
+    <<: *service-base
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      args:
+        MODULE: fcrc-agent
+    image: fcrc/fcrc-agent:${IMAGE_TAG:-1.0.0}
+    container_name: fcrc-agent
+    environment:
+      <<: *common-env
+      SERVER_PORT: "8085"
+      FCRC_CUSTOMER_URL: http://fcrc-customer:8081
+      FCRC_RISK_URL: http://fcrc-risk:8082
+      FCRC_COMPLIANCE_URL: http://fcrc-compliance:8083
+      FCRC_WORKFLOW_URL: http://fcrc-workflow:8084
+      FCRC_CASE_URL: http://fcrc-case:8086
+      FCRC_REPORT_URL: http://fcrc-report:8087
+      FCRC_AGENT_WORKSPACE: /app/data/agent-workspace
+      FCRC_AGENT_STATE: /app/data/agent-state
+      FCRC_AGENT_MODEL: ${FCRC_AGENT_MODEL:-mock}
+      FCRC_DASHSCOPE_MODEL: ${FCRC_DASHSCOPE_MODEL:-qwen-plus}
+      DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY:-}
+      FCRC_AGENT_SANDBOX: ${FCRC_AGENT_SANDBOX:-false}
+    volumes:
+      - agent_data:/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8085/api/agent/health | grep -q '\"status\":\"UP\"'"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 90s
+
+  fcrc-gateway:
+    restart: unless-stopped
+    stop_grace_period: 30s
+    # 网关使用 lb:// 路由，必须先能访问 Nacos；业务实例注册后再逐步可用。
+    depends_on:
+      fcrc-nacos:
+        condition: service_started
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      args:
+        MODULE: fcrc-gateway
+    image: fcrc/fcrc-gateway:${IMAGE_TAG:-1.0.0}
+    container_name: fcrc-gateway
+    environment:
+      <<: *common-env
+      SERVER_PORT: "8080"
+    ports:
+      - "${GATEWAY_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/actuator/health | grep -q '\"status\":\"UP\"'"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+    networks:
+      - fcrc-net
+
+  fcrc-web:
+    build:
+      context: ..
+      dockerfile: deploy/nginx/Dockerfile
+    image: fcrc/fcrc-web:${IMAGE_TAG:-1.0.0}
+    container_name: fcrc-web
+    restart: unless-stopped
+    depends_on:
+      fcrc-gateway:
+        condition: service_healthy
+    ports:
+      - "${WEB_PORT:-8088}:80"
+    networks:
+      - fcrc-net
+
+volumes:
+  mysql_data:
+    name: fcrc_mysql_data
+  nacos_data:
+    name: fcrc_nacos_data
+  nacos_logs:
+    name: fcrc_nacos_logs
+  agent_data:
+    name: fcrc_agent_data
+
+networks:
+  fcrc-net:
+    name: fcrc-net
+    driver: bridge

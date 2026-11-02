@@ -1,0 +1,11 @@
+**/target
+**/data
+**/*.log
+.git
+.gitignore
+.idea
+.vscode
+deploy/backups
+deploy/.env
+README.md
+docs

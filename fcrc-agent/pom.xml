@@ -1,0 +1,30 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.fcrc</groupId>
+        <artifactId>fcrc-service-parent</artifactId>
+        <version>1.0.0</version>
+        <relativePath>../fcrc-service-parent/pom.xml</relativePath>
+    </parent>
+    <artifactId>fcrc-agent</artifactId>
+    <name>FCRC AgentScope AI Copilot Service</name>
+    <dependencies>
+        <!-- 核心教学点：AgentScope Harness / Agent / Tool / Memory / Sandbox 能力 -->
+        <dependency>
+            <groupId>io.agentscope</groupId>
+            <artifactId>agentscope-harness</artifactId>
+        </dependency>
+        <!-- 真实模型模式：DashScope（qwen） -->
+        <dependency>
+            <groupId>io.agentscope</groupId>
+            <artifactId>agentscope-extensions-model-dashscope</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.projectreactor</groupId>
+            <artifactId>reactor-core</artifactId>
+        </dependency>
+    </dependencies>
+</project>
