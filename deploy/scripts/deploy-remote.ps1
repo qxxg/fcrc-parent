@@ -1,4 +1,4 @@
-# FCRC 从 Windows 开发机部署到 Ubuntu 服务器。
+﻿# FCRC 从 Windows 开发机部署到 Ubuntu 服务器。
 #
 # 前置条件：
 #   * Windows 已启用 OpenSSH Client（ssh/scp/tar 可用）；
