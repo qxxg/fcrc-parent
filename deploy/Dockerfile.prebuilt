@@ -1,0 +1,35 @@
+# ---------- 运行镜像（使用本地/CI 已构建好的 jar） ----------
+#
+# 与 deploy/Dockerfile 的区别：
+#   deploy/Dockerfile          在容器内用 Maven 构建，适合“一条命令从源码到镜像”；
+#   deploy/Dockerfile.prebuilt 直接复制 target/*.jar，适合内网服务器、CI 产物部署。
+#
+# 服务器通常无法访问 Docker Hub / Maven Central 的完整生态，先把 jar 构建好再上传，
+# 可以把“构建”和“运行”彻底分开，也避免 9 个镜像各自重复下载依赖。
+#
+# 构建上下文必须是模块目录（例如 fcrc-customer/），否则 COPY target/*.jar 找不到文件：
+#   docker build -f ../deploy/Dockerfile.prebuilt -t fcrc/fcrc-customer:1.0.0 .
+FROM eclipse-temurin:21-jre-jammy
+
+ENV TZ=Asia/Shanghai \
+    JAVA_OPTS="-XX:MaxRAMPercentage=75 -XX:+UseG1GC -Dfile.encoding=UTF-8"
+
+# 安装 curl 仅用于 Compose healthcheck；安装后立刻清理 apt 索引，减小镜像体积。
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd --system fcrc \
+    && useradd --system --gid fcrc --home-dir /app --shell /usr/sbin/nologin fcrc
+
+WORKDIR /app
+
+# Spring Boot 的 *.jar.original 不会匹配 *.jar，因此这里只会复制可执行 jar。
+COPY target/*.jar /app/app.jar
+
+RUN mkdir -p /app/data && chown -R fcrc:fcrc /app
+
+# 非 root 运行：即使容器被攻破，攻击者也不是 root。
+USER fcrc
+
+EXPOSE 8080
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar /app/app.jar"]

@@ -165,18 +165,29 @@ curl -X POST http://localhost:8080/api/agent/chat \
 
 ## 6. Docker 部署
 
+推荐先在本机构建 jar，再部署到服务器（不需要在服务器里跑 Maven）：
+
 ```bash
+mvn -B -DskipTests package
+
 cd deploy
 cp .env.example .env
 # 修改 MySQL 密码；如需真实大模型，填写 DASHSCOPE_API_KEY 并设置 FCRC_AGENT_MODEL=dashscope
-docker compose up -d --build
+bash scripts/deploy.sh --prebuilt
+```
+
+也可以让 Docker 在容器内完成 Maven 构建（首次较慢）：
+
+```bash
+cd deploy
+bash scripts/deploy.sh
 ```
 
 访问：
 
 - 驾驶舱：<http://服务器IP:8088>
 - 网关：<http://服务器IP:8080>
-- Nacos 控制台：<http://服务器IP:8849/nacos>
+- Nacos 控制台：<http://服务器IP:8849/>（Nacos 3.x 独立控制台端口；2.x 为 `:8848/nacos`）
 
 详细步骤、备份、回滚、故障排查见 [docs/06-deployment.md](docs/06-deployment.md)。
 

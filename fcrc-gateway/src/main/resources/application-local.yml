@@ -1,0 +1,36 @@
+# 本地开发：直接按端口转发，不依赖 Nacos。
+spring:
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            - id: fcrc-customer
+              uri: ${FCRC_CUSTOMER_URL:http://localhost:8081}
+              predicates:
+                # 内部接口 /internal/** 不经过网关，只允许内网服务直连，避免公网越权访问。
+                - Path=/api/customers/**,/api/customers
+            - id: fcrc-risk
+              uri: ${FCRC_RISK_URL:http://localhost:8082}
+              predicates:
+                - Path=/api/risk/**
+            - id: fcrc-compliance
+              uri: ${FCRC_COMPLIANCE_URL:http://localhost:8083}
+              predicates:
+                - Path=/api/compliance/**
+            - id: fcrc-workflow
+              uri: ${FCRC_WORKFLOW_URL:http://localhost:8084}
+              predicates:
+                - Path=/api/workflows/**
+            - id: fcrc-agent
+              uri: ${FCRC_AGENT_URL:http://localhost:8085}
+              predicates:
+                - Path=/api/agent/**
+            - id: fcrc-case
+              uri: ${FCRC_CASE_URL:http://localhost:8086}
+              predicates:
+                - Path=/api/cases/**
+            - id: fcrc-report
+              uri: ${FCRC_REPORT_URL:http://localhost:8087}
+              predicates:
+                - Path=/api/reports/**

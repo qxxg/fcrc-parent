@@ -21,7 +21,8 @@ Thumbs.db
 .DS_Store
 
 # Local secrets / overrides
-application-local.yml
+# 注意：不要忽略 src/main/resources/application-local.yml，
+# 它是项目自带的 local profile 配置（H2 + 关闭 Nacos），必须入库。
 *.local.yml
 .env
 

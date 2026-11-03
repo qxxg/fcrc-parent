@@ -1,0 +1,57 @@
+# 预构建 jar 的 Compose 覆盖文件。
+#
+# 用途：服务器不在容器里跑 Maven，而是直接使用本机/CI 已构建好的 fat jar。
+#
+# 前置条件（在项目根目录执行）：
+#   mvn -B -DskipTests package
+#
+# 用法（在 deploy 目录）：
+#   docker compose -f docker-compose.yml -f docker-compose.prebuilt.yml build
+#   docker compose -f docker-compose.yml -f docker-compose.prebuilt.yml up -d
+#
+# 说明：
+#   - 这里只覆盖 build.context / build.dockerfile，镜像名、端口、健康检查仍复用主文件；
+#   - context 指向各模块目录，这样 Dockerfile.prebuilt 里的 target/*.jar 才能被复制；
+#   - fcrc-web 使用 Nginx 镜像，不在此覆盖。
+name: fcrc
+
+services:
+  fcrc-customer:
+    build:
+      context: ../fcrc-customer
+      dockerfile: ../deploy/Dockerfile.prebuilt
+
+  fcrc-risk:
+    build:
+      context: ../fcrc-risk
+      dockerfile: ../deploy/Dockerfile.prebuilt
+
+  fcrc-compliance:
+    build:
+      context: ../fcrc-compliance
+      dockerfile: ../deploy/Dockerfile.prebuilt
+
+  fcrc-case:
+    build:
+      context: ../fcrc-case
+      dockerfile: ../deploy/Dockerfile.prebuilt
+
+  fcrc-report:
+    build:
+      context: ../fcrc-report
+      dockerfile: ../deploy/Dockerfile.prebuilt
+
+  fcrc-workflow:
+    build:
+      context: ../fcrc-workflow
+      dockerfile: ../deploy/Dockerfile.prebuilt
+
+  fcrc-agent:
+    build:
+      context: ../fcrc-agent
+      dockerfile: ../deploy/Dockerfile.prebuilt
+
+  fcrc-gateway:
+    build:
+      context: ../fcrc-gateway
+      dockerfile: ../deploy/Dockerfile.prebuilt

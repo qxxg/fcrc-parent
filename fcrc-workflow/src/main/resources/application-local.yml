@@ -1,0 +1,35 @@
+# 本地开发：H2 文件库 + 直连各服务端口，不依赖 Nacos/Docker。
+spring:
+  datasource:
+    url: jdbc:h2:file:./data/workflow;MODE=MySQL;DATABASE_TO_LOWER=TRUE;AUTO_SERVER=TRUE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  cloud:
+    nacos:
+      discovery:
+        enabled: false
+        register-enabled: false
+
+fcrc:
+  clients:
+    customer:
+      base-url: ${CUSTOMER_URL:http://localhost:8081}
+    risk:
+      base-url: ${RISK_URL:http://localhost:8082}
+    compliance:
+      base-url: ${COMPLIANCE_URL:http://localhost:8083}
+    cases:
+      base-url: ${CASE_URL:http://localhost:8086}
+    report:
+      base-url: ${REPORT_URL:http://localhost:8087}
+    connect-timeout: 2s
+    read-timeout: 10s

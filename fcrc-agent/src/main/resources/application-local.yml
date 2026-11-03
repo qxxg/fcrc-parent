@@ -1,0 +1,7 @@
+# 本地开发：不连 Nacos，下游服务默认 localhost。
+spring:
+  cloud:
+    nacos:
+      discovery:
+        enabled: false
+        register-enabled: false
